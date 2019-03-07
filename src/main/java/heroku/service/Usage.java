@@ -1,6 +1,5 @@
 package heroku.service;
 
-import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -9,7 +8,6 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.PageFactory;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -19,9 +17,7 @@ import heroku.util.Utils;
 import io.github.bonigarcia.wdm.WebDriverManager;
 
 @Service
-public class Usage implements IService, InitializingBean {
-	private WebDriver driver;
-
+public class Usage implements IService {
 	@Autowired
 	private IMailService service;
 
@@ -36,6 +32,8 @@ public class Usage implements IService, InitializingBean {
 
 	@Override
 	public void exec() {
+		WebDriver driver = init();
+
 		StringBuilder sb = new StringBuilder();
 
 		Arrays.stream( account ).forEach( i -> {
@@ -68,11 +66,10 @@ public class Usage implements IService, InitializingBean {
 		service.send( "Heroku Usage_" + new SimpleDateFormat( "yyyy-MM-dd" ).format( new Date() ), sb.toString() );
 	}
 
-	@Override
-	public void afterPropertiesSet() throws Exception {
+	private WebDriver init() {
 		ChromeOptions options = new ChromeOptions();
 
-		if ( "DESKTOP-CM2IAT1".equals( InetAddress.getLocalHost().getHostName() ) ) {
+		if ( bin.isEmpty() ) {
 			WebDriverManager.chromedriver().setup();
 
 		} else {
@@ -84,7 +81,7 @@ public class Usage implements IService, InitializingBean {
 
 		options.addArguments( "--headless", "--disable-gpu" );
 
-		driver = new ChromeDriver( options );
+		return new ChromeDriver( options );
 	}
 
 	private void sleep() {
