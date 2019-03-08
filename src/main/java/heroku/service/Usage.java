@@ -10,6 +10,7 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.PageFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import heroku.model.Billing;
@@ -31,6 +32,7 @@ public class Usage implements IService {
 	private String bin;
 
 	@Override
+	@Scheduled( cron = "0 0 12,19 * * *" )
 	public void exec() {
 		WebDriver driver = init();
 
