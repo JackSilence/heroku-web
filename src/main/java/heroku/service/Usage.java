@@ -1,13 +1,26 @@
 package heroku.service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 
+import javax.imageio.ImageIO;
+import javax.xml.bind.DatatypeConverter;
+
+import org.openqa.selenium.Dimension;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.Point;
+import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.PageFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +32,10 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 
 @Service
 public class Usage implements IService {
+	private final Logger log = LoggerFactory.getLogger( this.getClass() );
+
+	private static final String IMAGE = "<img src='data:image/png;base64,%s'>";
+
 	@Autowired
 	private IMailService service;
 
@@ -43,7 +60,7 @@ public class Usage implements IService {
 
 			Billing billing = PageFactory.initElements( driver, Billing.class );
 
-			String email = Utils.decode( i ), text;
+			String email = Utils.decode( i );
 
 			sb.append( email ).append( ":<br>" );
 
@@ -53,9 +70,25 @@ public class Usage implements IService {
 
 			sleep();
 
-			text = billing.getUsage().getText().replace( "Find out more", "--" );
+			File screenshot = ( ( TakesScreenshot ) driver ).getScreenshotAs( OutputType.FILE );
 
-			sb.append( text.replaceAll( "(\r\n|\n)", "<br>" ) ).append( "<br><br>" );
+			WebElement element = billing.getUsage();
+
+			Point point = element.getLocation();
+
+			Dimension size = element.getSize();
+
+			int x = point.getX(), y = point.getY(), width = size.getWidth(), height = size.getHeight();
+
+			try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
+				ImageIO.write( ImageIO.read( screenshot ).getSubimage( x, y, width, height ), "png", stream );
+
+				sb.append( String.format( IMAGE, DatatypeConverter.printBase64Binary( stream.toByteArray() ) ) );
+
+			} catch ( IOException e ) {
+				log.error( "", e );
+
+			}
 
 			billing.getMenu().click();
 			billing.getLogout().click();
@@ -81,7 +114,7 @@ public class Usage implements IService {
 
 		}
 
-		options.addArguments( "--headless", "--disable-gpu" );
+		options.addArguments( "--headless", "--disable-gpu", "--window-size=1920,1080" );
 
 		return new ChromeDriver( options );
 	}
