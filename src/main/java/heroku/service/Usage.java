@@ -96,7 +96,7 @@ public class Usage implements IService {
 			try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
 				ImageIO.write( ImageIO.read( screenshot ).getSubimage( x, y, width, height ), "png", stream );
 
-				sb2.append( String.format( IMAGE, DatatypeConverter.printBase64Binary( stream.toByteArray() ) ) ).append( "<br><br>" );
+				sb2.append( String.format( IMAGE, DatatypeConverter.printBase64Binary( stream.toByteArray() ) ) ).append( "<br>" );
 
 			} catch ( IOException e ) {
 				log.error( "", e );
