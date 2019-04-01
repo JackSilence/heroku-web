@@ -6,10 +6,13 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 import javax.xml.bind.DatatypeConverter;
 
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.Point;
@@ -34,7 +37,11 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 public class Usage implements IService {
 	private final Logger log = LoggerFactory.getLogger( this.getClass() );
 
+	private static final String TEMPLATE = "/heroku/template/template.html", ROW = "/heroku/template/row.html";
+
 	private static final String IMAGE = "<img src='data:image/png;base64,%s'>";
+
+	private static final String USAGE = "(.+?) free dyno hours (.+?) used this month";
 
 	@Autowired
 	private IMailService service;
@@ -53,16 +60,16 @@ public class Usage implements IService {
 	public void exec() {
 		WebDriver driver = init();
 
-		StringBuilder sb = new StringBuilder();
+		String row = Utils.getResourceAsString( ROW );
+
+		StringBuilder sb1 = new StringBuilder(), sb2 = new StringBuilder();
 
 		Arrays.stream( account ).forEach( i -> {
 			driver.get( "https://dashboard.heroku.com/account/billing" );
 
 			Billing billing = PageFactory.initElements( driver, Billing.class );
 
-			String email = Utils.decode( i );
-
-			sb.append( email ).append( ":<br>" );
+			String email = Utils.decode( i ), usage = StringUtils.EMPTY;
 
 			billing.getEmail().sendKeys( email );
 			billing.getPassword().sendKeys( Utils.decode( password ) );
@@ -70,9 +77,15 @@ public class Usage implements IService {
 
 			sleep();
 
-			File screenshot = ( ( TakesScreenshot ) driver ).getScreenshotAs( OutputType.FILE );
-
 			WebElement element = billing.getUsage();
+
+			Matcher matcher = Pattern.compile( USAGE ).matcher( element.getText() );
+
+			usage = matcher.find() ? matcher.group( 1 ) + StringUtils.SPACE + matcher.group( 2 ) : usage;
+
+			sb1.append( String.format( row, StringUtils.substringBefore( email, "@" ), usage ) );
+
+			File screenshot = ( ( TakesScreenshot ) driver ).getScreenshotAs( OutputType.FILE );
 
 			Point point = element.getLocation();
 
@@ -83,7 +96,7 @@ public class Usage implements IService {
 			try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
 				ImageIO.write( ImageIO.read( screenshot ).getSubimage( x, y, width, height ), "png", stream );
 
-				sb.append( String.format( IMAGE, DatatypeConverter.printBase64Binary( stream.toByteArray() ) ) );
+				sb2.append( String.format( IMAGE, DatatypeConverter.printBase64Binary( stream.toByteArray() ) ) ).append( "<br><br>" );
 
 			} catch ( IOException e ) {
 				log.error( "", e );
@@ -98,7 +111,9 @@ public class Usage implements IService {
 
 		driver.quit();
 
-		service.send( "Heroku Usage_" + new SimpleDateFormat( "yyyy-MM-dd" ).format( new Date() ), sb.toString() );
+		String content = String.format( Utils.getResourceAsString( TEMPLATE ), sb1.toString(), sb2.toString() );
+
+		service.send( "Heroku Usage_" + new SimpleDateFormat( "yyyy-MM-dd" ).format( new Date() ), content );
 	}
 
 	private WebDriver init() {
