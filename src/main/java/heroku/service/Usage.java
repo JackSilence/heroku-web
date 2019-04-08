@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,7 +14,10 @@ import javax.imageio.ImageIO;
 import javax.xml.bind.DatatypeConverter;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.client.fluent.Form;
+import org.apache.http.client.fluent.Request;
 import org.openqa.selenium.Dimension;
+import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.Point;
 import org.openqa.selenium.TakesScreenshot;
@@ -29,6 +33,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.google.gson.Gson;
+
 import heroku.model.Billing;
 import heroku.util.Utils;
 import io.github.bonigarcia.wdm.WebDriverManager;
@@ -39,9 +45,9 @@ public class Usage implements IService {
 
 	private static final String TEMPLATE = "/heroku/template/template.html", ROW = "/heroku/template/row.html";
 
-	private static final String IMAGE = "<img src='data:image/png;base64,%s'>";
-
 	private static final String USAGE = "(.+?) free dyno hours (.+?) used this month";
+
+	private static final String UPLOAD_URI = "https://api.imgur.com/3/upload", IMAGE = "<img src='%s'>";
 
 	@Autowired
 	private IMailService service;
@@ -54,6 +60,9 @@ public class Usage implements IService {
 
 	@Value( "${GOOGLE_CHROME_SHIM:}" )
 	private String bin;
+
+	@Value( "${imgur.id}" )
+	private String id;
 
 	@Override
 	@Scheduled( cron = "0 0 12,19 * * *" )
@@ -77,6 +86,8 @@ public class Usage implements IService {
 
 			sleep();
 
+			( ( JavascriptExecutor ) driver ).executeScript( "$('div.account-quota-usage > table.table > thead > th.pull-right').text('')" );
+
 			WebElement element = billing.getUsage();
 
 			Matcher matcher = Pattern.compile( USAGE ).matcher( element.getText() );
@@ -96,7 +107,15 @@ public class Usage implements IService {
 			try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
 				ImageIO.write( ImageIO.read( screenshot ).getSubimage( x, y, width, height ), "png", stream );
 
-				sb2.append( String.format( IMAGE, DatatypeConverter.printBase64Binary( stream.toByteArray() ) ) ).append( "<br>" );
+				String base64 = DatatypeConverter.printBase64Binary( stream.toByteArray() );
+
+				Request request = Request.Post( UPLOAD_URI ).setHeader( "Authorization", "Client-ID " + id );
+
+				request.bodyForm( Form.form().add( "image", base64 ).add( "type", "base64" ).build() );
+
+				Map<?, ?> result = new Gson().fromJson( Utils.getEntityAsString( request ), Map.class );
+
+				sb2.append( String.format( IMAGE, ( ( Map<?, ?> ) result.get( "data" ) ).get( "link" ) ) ).append( "<br>" );
 
 			} catch ( IOException e ) {
 				log.error( "", e );
