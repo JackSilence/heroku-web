@@ -7,13 +7,10 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 import javax.xml.bind.DatatypeConverter;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.fluent.Form;
 import org.apache.http.client.fluent.Request;
 import org.openqa.selenium.Dimension;
@@ -43,11 +40,7 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 public class Usage implements IService {
 	private final Logger log = LoggerFactory.getLogger( this.getClass() );
 
-	private static final String SCRIPT = "$('%s').css('width', 'auto').find('> thead > th.pull-right').text('')";
-
-	private static final String TEMPLATE = "/heroku/template/template.html", ROW = "/heroku/template/row.html";
-
-	private static final String USAGE = "(.+?) free dyno hours (.+?) used this month";
+	private static final String SCRIPT = "/heroku/template/script.js";
 
 	private static final String UPLOAD_URI = "https://api.imgur.com/3/upload", IMAGE = "<img src='%s'>";
 
@@ -71,32 +64,24 @@ public class Usage implements IService {
 	public void exec() {
 		WebDriver driver = init();
 
-		String row = Utils.getResourceAsString( ROW );
+		String script = String.format( Utils.getResourceAsString( SCRIPT ), Billing.CSS_USAGE );
 
-		StringBuilder sb1 = new StringBuilder(), sb2 = new StringBuilder();
+		StringBuilder sb = new StringBuilder();
 
 		Arrays.stream( account ).forEach( i -> {
 			driver.get( "https://dashboard.heroku.com/account/billing" );
 
 			Billing billing = PageFactory.initElements( driver, Billing.class );
 
-			String email = Utils.decode( i ), usage = StringUtils.EMPTY;
-
-			billing.getEmail().sendKeys( email );
+			billing.getEmail().sendKeys( Utils.decode( i ) );
 			billing.getPassword().sendKeys( Utils.decode( password ) );
 			billing.getLogin().click();
 
 			sleep();
 
-			( ( JavascriptExecutor ) driver ).executeScript( String.format( SCRIPT, Billing.CSS_USAGE ) );
+			( ( JavascriptExecutor ) driver ).executeScript( script );
 
 			WebElement element = billing.getUsage();
-
-			Matcher matcher = Pattern.compile( USAGE ).matcher( element.getText() );
-
-			usage = matcher.find() ? matcher.group( 1 ) + StringUtils.SPACE + matcher.group( 2 ) : usage;
-
-			sb1.append( String.format( row, StringUtils.substringBefore( email, "@" ), usage ) );
 
 			File screenshot = ( ( TakesScreenshot ) driver ).getScreenshotAs( OutputType.FILE );
 
@@ -117,7 +102,7 @@ public class Usage implements IService {
 
 				Map<?, ?> result = new Gson().fromJson( Utils.getEntityAsString( request ), Map.class );
 
-				sb2.append( String.format( IMAGE, ( ( Map<?, ?> ) result.get( "data" ) ).get( "link" ) ) ).append( "<br>" );
+				sb.append( String.format( IMAGE, ( ( Map<?, ?> ) result.get( "data" ) ).get( "link" ) ) ).append( "<br>" );
 
 			} catch ( IOException e ) {
 				log.error( "", e );
@@ -132,9 +117,7 @@ public class Usage implements IService {
 
 		driver.quit();
 
-		String content = String.format( Utils.getResourceAsString( TEMPLATE ), sb1.toString(), sb2.toString() );
-
-		service.send( "Heroku Usage_" + new SimpleDateFormat( "yyyy-MM-dd" ).format( new Date() ), content );
+		service.send( "Heroku Usage_" + new SimpleDateFormat( "yyyy-MM-dd" ).format( new Date() ), sb.toString() );
 	}
 
 	private WebDriver init() {
