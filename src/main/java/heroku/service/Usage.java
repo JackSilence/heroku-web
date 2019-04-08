@@ -1,15 +1,11 @@
 package heroku.service;
 
-import java.awt.Graphics;
-import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,7 +43,7 @@ import io.github.bonigarcia.wdm.WebDriverManager;
 public class Usage implements IService {
 	private final Logger log = LoggerFactory.getLogger( this.getClass() );
 
-	private static final String SCRIPT = "$('%s').css('width', '500px').find('> thead > th.pull-right').text('')";
+	private static final String SCRIPT = "$('%s').css('width', 'auto').find('> thead > th.pull-right').text('')";
 
 	private static final String TEMPLATE = "/heroku/template/template.html", ROW = "/heroku/template/row.html";
 
@@ -77,9 +73,7 @@ public class Usage implements IService {
 
 		String row = Utils.getResourceAsString( ROW );
 
-		StringBuilder sb = new StringBuilder();
-
-		List<BufferedImage> images = new ArrayList<>();
+		StringBuilder sb1 = new StringBuilder(), sb2 = new StringBuilder();
 
 		Arrays.stream( account ).forEach( i -> {
 			driver.get( "https://dashboard.heroku.com/account/billing" );
@@ -102,7 +96,7 @@ public class Usage implements IService {
 
 			usage = matcher.find() ? matcher.group( 1 ) + StringUtils.SPACE + matcher.group( 2 ) : usage;
 
-			sb.append( String.format( row, StringUtils.substringBefore( email, "@" ), usage ) );
+			sb1.append( String.format( row, StringUtils.substringBefore( email, "@" ), usage ) );
 
 			File screenshot = ( ( TakesScreenshot ) driver ).getScreenshotAs( OutputType.FILE );
 
@@ -110,10 +104,24 @@ public class Usage implements IService {
 
 			Dimension size = element.getSize();
 
-			try {
-				images.add( ImageIO.read( screenshot ).getSubimage( point.getX(), point.getY(), size.getWidth(), size.getHeight() ) );
+			int x = point.getX(), y = point.getY(), width = size.getWidth(), height = size.getHeight();
+
+			try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
+				ImageIO.write( ImageIO.read( screenshot ).getSubimage( x, y, width, height ), "png", stream );
+
+				String base64 = DatatypeConverter.printBase64Binary( stream.toByteArray() );
+
+				Request request = Request.Post( UPLOAD_URI ).setHeader( "Authorization", "Client-ID " + id );
+
+				request.bodyForm( Form.form().add( "image", base64 ).add( "type", "base64" ).build() );
+
+				Map<?, ?> result = new Gson().fromJson( Utils.getEntityAsString( request ), Map.class );
+
+				sb2.append( String.format( IMAGE, ( ( Map<?, ?> ) result.get( "data" ) ).get( "link" ) ) ).append( "<br>" );
 
 			} catch ( IOException e ) {
+				log.error( "", e );
+
 			}
 
 			billing.getMenu().click();
@@ -124,46 +132,7 @@ public class Usage implements IService {
 
 		driver.quit();
 
-		String str = StringUtils.EMPTY;
-
-		if ( !images.isEmpty() ) {
-			int height = images.stream().mapToInt( BufferedImage::getHeight ).sum();
-
-			BufferedImage image = new BufferedImage( images.get( 0 ).getWidth(), height, BufferedImage.TYPE_INT_RGB );
-
-			Graphics g = image.getGraphics();
-
-			for ( int i = 0; i < images.size(); i++ ) {
-				if ( i == 0 ) {
-					g.drawImage( images.get( 0 ), 0, 0, null );
-
-				} else {
-					g.drawImage( images.get( 1 ), 0, images.get( 0 ).getHeight(), null );
-				}
-			}
-
-			g.dispose();
-
-			try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
-				ImageIO.write( image, "png", stream );
-
-				String base64 = DatatypeConverter.printBase64Binary( stream.toByteArray() );
-
-				Request request = Request.Post( UPLOAD_URI ).setHeader( "Authorization", "Client-ID " + id );
-
-				request.bodyForm( Form.form().add( "image", base64 ).add( "type", "base64" ).build() );
-
-				Map<?, ?> result = new Gson().fromJson( Utils.getEntityAsString( request ), Map.class );
-
-				str = String.format( IMAGE, ( ( Map<?, ?> ) result.get( "data" ) ).get( "link" ) );
-
-			} catch ( IOException e ) {
-				log.error( "", e );
-
-			}
-		}
-
-		String content = String.format( Utils.getResourceAsString( TEMPLATE ), sb.toString(), str );
+		String content = String.format( Utils.getResourceAsString( TEMPLATE ), sb1.toString(), sb2.toString() );
 
 		service.send( "Heroku Usage_" + new SimpleDateFormat( "yyyy-MM-dd" ).format( new Date() ), content );
 	}
