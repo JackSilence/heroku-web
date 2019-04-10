@@ -11,8 +11,6 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 import javax.xml.bind.DatatypeConverter;
 
-import org.apache.http.client.fluent.Form;
-import org.apache.http.client.fluent.Request;
 import org.openqa.selenium.Dimension;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.OutputType;
@@ -30,7 +28,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import com.google.gson.Gson;
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 
 import heroku.model.Billing;
 import heroku.util.Utils;
@@ -42,7 +41,7 @@ public class Usage implements IService {
 
 	private static final String SCRIPT = "/heroku/template/script.js";
 
-	private static final String UPLOAD_URI = "https://api.imgur.com/3/upload", IMAGE = "<img src='%s'>";
+	private static final String DATA_URI = "data:image/png;base64,%s", IMAGE = "<img src='%s'>";
 
 	@Autowired
 	private IMailService service;
@@ -55,9 +54,6 @@ public class Usage implements IService {
 
 	@Value( "${GOOGLE_CHROME_SHIM:}" )
 	private String bin;
-
-	@Value( "${imgur.id}" )
-	private String id;
 
 	@Override
 	@Scheduled( cron = "0 0 12,19 * * *" )
@@ -94,15 +90,11 @@ public class Usage implements IService {
 			try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
 				ImageIO.write( ImageIO.read( screenshot ).getSubimage( x, y, width, height ), "png", stream );
 
-				String base64 = DatatypeConverter.printBase64Binary( stream.toByteArray() );
+				String file = String.format( DATA_URI, DatatypeConverter.printBase64Binary( stream.toByteArray() ) );
 
-				Request request = Request.Post( UPLOAD_URI ).setHeader( "Authorization", "Client-ID " + id );
+				Map<?, ?> result = new Cloudinary().uploader().upload( file, ObjectUtils.emptyMap() );
 
-				request.bodyForm( Form.form().add( "image", base64 ).add( "type", "base64" ).build() );
-
-				Map<?, ?> result = new Gson().fromJson( Utils.getEntityAsString( request ), Map.class );
-
-				sb.append( String.format( IMAGE, ( ( Map<?, ?> ) result.get( "data" ) ).get( "link" ) ) ).append( "<br>" );
+				sb.append( String.format( IMAGE, result.get( "secure_url" ) ) ).append( "<br>" );
 
 			} catch ( IOException e ) {
 				log.error( "", e );
