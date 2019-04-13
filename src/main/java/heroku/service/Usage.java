@@ -1,11 +1,15 @@
 package heroku.service;
 
+import java.awt.Graphics;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
@@ -62,7 +66,7 @@ public class Usage implements IService {
 
 		String script = String.format( Utils.getResourceAsString( SCRIPT ), Billing.CSS_USAGE );
 
-		StringBuilder sb = new StringBuilder();
+		List<BufferedImage> images = new ArrayList<>();
 
 		Arrays.stream( account ).forEach( i -> {
 			driver.get( "https://dashboard.heroku.com/account/billing" );
@@ -87,14 +91,8 @@ public class Usage implements IService {
 
 			int x = point.getX(), y = point.getY(), width = size.getWidth(), height = size.getHeight();
 
-			try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
-				ImageIO.write( ImageIO.read( screenshot ).getSubimage( x, y, width, height ), "png", stream );
-
-				String file = String.format( DATA_URI, DatatypeConverter.printBase64Binary( stream.toByteArray() ) );
-
-				Map<?, ?> result = new Cloudinary().uploader().upload( file, ObjectUtils.emptyMap() );
-
-				sb.append( String.format( IMAGE, result.get( "secure_url" ) ) ).append( "<br>" );
+			try {
+				images.add( ImageIO.read( screenshot ).getSubimage( x, y, width, height ) );
 
 			} catch ( IOException e ) {
 				log.error( "", e );
@@ -109,7 +107,39 @@ public class Usage implements IService {
 
 		driver.quit();
 
-		service.send( "Heroku Usage_" + new SimpleDateFormat( "yyyyMMddHH" ).format( new Date() ), sb.toString() );
+		if ( images.isEmpty() ) {
+			return;
+
+		}
+
+		int height = images.stream().mapToInt( BufferedImage::getHeight ).sum();
+
+		BufferedImage image = new BufferedImage( images.get( 0 ).getWidth(), height, BufferedImage.TYPE_INT_RGB );
+
+		Graphics g = image.getGraphics();
+
+		for ( int i = 0; i < images.size(); i++ ) {
+			g.drawImage( images.get( i ), 0, i == 0 ? 0 : images.get( i - 1 ).getHeight(), null );
+
+		}
+
+		g.dispose();
+
+		String time = new SimpleDateFormat( "yyyyMMddHH" ).format( new Date() );
+
+		try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
+			ImageIO.write( image, "png", stream );
+
+			String file = String.format( DATA_URI, DatatypeConverter.printBase64Binary( stream.toByteArray() ) );
+
+			Map<?, ?> result = new Cloudinary().uploader().upload( file, ObjectUtils.asMap( "public_id", time ) );
+
+			service.send( "Heroku Usage_" + time, String.format( IMAGE, result.get( "secure_url" ) ).toString() );
+
+		} catch ( IOException e ) {
+			log.error( "", e );
+
+		}
 	}
 
 	private WebDriver init() {
