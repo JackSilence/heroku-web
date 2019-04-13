@@ -119,7 +119,7 @@ public class Usage implements IService {
 		Graphics g = image.getGraphics();
 
 		for ( int i = 0; i < images.size(); i++ ) {
-			g.drawImage( images.get( i ), 0, i == 0 ? 0 : images.get( i - 1 ).getHeight(), null );
+			g.drawImage( images.get( i ), 0, i == 0 ? height = 0 : ( height += images.get( i - 1 ).getHeight() ), null );
 
 		}
 
