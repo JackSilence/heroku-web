@@ -1,1 +1,1 @@
-$('%1$s').css('width','auto').find('> thead > th.pull-right').text(''),$('a.ember-view', '%1$s').each(function(){var t=$(this).text().trim(),e=t.split('-'),a=e.length;a>1&&$(this).html($(this).html().replace(t,'*'.repeat(e[0].length)+'-'+e.slice(1,a).join('-')))});
+$('%1$s').css('width','432px').find('> thead > th.pull-right').text(''),$('a.ember-view', '%1$s').each(function(){var t=$(this).text().trim(),e=t.split('-'),a=e.length;a>1&&$(this).html($(this).html().replace(t,'*'.repeat(e[0].length)+'-'+e.slice(1,a).join('-')))});
