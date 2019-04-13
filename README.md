@@ -1,4 +1,4 @@
-目的: 每日定時排程發送Heroku兩個帳號的Free Dyno Usage資訊, 避免使用量超過限額
+目的: 每日定時排程發送Heroku多個帳號的Free Dyno Usage資訊, 避免使用量超過限額
 
 機制: 將此應用程式部署在Heroku上, 透過UptimeRobot定時監控避免使用Heroku免費帳號的休眠問題
 
