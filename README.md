@@ -7,5 +7,3 @@ SeleniumTask - 透過Selenium + Headless Chrome自動登入帳號後獲取Billin
 執行客製化js腳本調整目標表格大小與內容, 擷取畫面合併為同一張圖片上傳至Cloudinary, 用SendGrid寄出通知信
 
 ExecuteController - 手動執行Task使用. 將Spring ApplicationContext中符合名稱的Bean取出呼叫execute方法執行
-
-![image](https://raw.githubusercontent.com/JackSilence/heroku-web/master/src/main/resources/demo.png)
