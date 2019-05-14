@@ -81,6 +81,8 @@ public class Usage implements IService {
 
 			( ( JavascriptExecutor ) driver ).executeScript( script );
 
+			sleep();
+
 			WebElement element = billing.getUsage();
 
 			File screenshot = ( ( TakesScreenshot ) driver ).getScreenshotAs( OutputType.FILE );
