@@ -1,5 +1,3 @@
-app:
-  name: HEROKU-WEB
 logging:
   level:
     root: INFO
