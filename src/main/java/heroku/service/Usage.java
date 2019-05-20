@@ -37,7 +37,9 @@ public class Usage extends Selenium<List<BufferedImage>> {
 	@Override
 	@Scheduled( cron = "0 0 12,19 * * *" )
 	public void exec() {
-		List<BufferedImage> images = exec( "--window-size=1920,1080" );
+		List<BufferedImage> images = new ArrayList<>();
+
+		exec( images, "--window-size=1920,1080" );
 
 		if ( images.isEmpty() ) {
 			return;
@@ -63,7 +65,7 @@ public class Usage extends Selenium<List<BufferedImage>> {
 	}
 
 	@Override
-	protected List<BufferedImage> exec( WebDriver driver ) {
+	protected void exec( WebDriver driver, List<BufferedImage> result ) {
 		String script = String.format( Utils.getResourceAsString( SCRIPT ), Billing.CSS_USAGE );
 
 		List<BufferedImage> images = new ArrayList<>();
@@ -90,7 +92,5 @@ public class Usage extends Selenium<List<BufferedImage>> {
 
 			sleep();
 		} );
-
-		return images;
 	}
 }
