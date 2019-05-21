@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.PageFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +56,7 @@ public class Usage extends Selenium {
 
 			sleep();
 
-			( ( JavascriptExecutor ) driver ).executeScript( script );
+			script( driver, script );
 
 			sleep();
 
