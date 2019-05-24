@@ -16,6 +16,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import heroku.model.Billing;
+import magic.service.Cloudinary;
 import magic.service.IMailService;
 import magic.service.Selenium;
 import magic.util.Utils;
@@ -23,6 +24,9 @@ import magic.util.Utils;
 @Service
 public class Usage extends Selenium {
 	private static final String SCRIPT = "/heroku/template/script.js", IMAGE = "<img src='%s'>";
+
+	@Autowired
+	private Cloudinary cloudinary;
 
 	@Autowired
 	private IMailService service;
@@ -88,6 +92,6 @@ public class Usage extends Selenium {
 
 		String time = new SimpleDateFormat( "yyyyMMddHH" ).format( new Date() );
 
-		service.send( "Heroku Usage_" + time, String.format( IMAGE, Utils.upload( base64( image ), time ) ) );
+		service.send( "Heroku Usage_" + time, String.format( IMAGE, cloudinary.upload( base64( image ), time ) ) );
 	}
 }
