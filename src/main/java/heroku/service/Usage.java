@@ -2,10 +2,8 @@ package heroku.service;
 
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 
 import org.openqa.selenium.WebDriver;
@@ -20,6 +18,8 @@ import magic.service.Cloudinary;
 import magic.service.IMailService;
 import magic.service.Selenium;
 import magic.util.Utils;
+import net.gpedro.integrations.slack.SlackAttachment;
+import net.gpedro.integrations.slack.SlackMessage;
 
 @Service
 public class Usage extends Selenium {
@@ -45,7 +45,7 @@ public class Usage extends Selenium {
 
 	@Override
 	protected void run( WebDriver driver ) {
-		String script = String.format( Utils.getResourceAsString( SCRIPT ), Billing.CSS_USAGE );
+		String script = String.format( Utils.getResourceAsString( SCRIPT ), Billing.CSS_USAGE ), subject, url;
 
 		List<BufferedImage> images = new ArrayList<>();
 
@@ -90,8 +90,8 @@ public class Usage extends Selenium {
 
 		g.dispose();
 
-		String time = new SimpleDateFormat( "yyyyMMddHH" ).format( new Date() );
+		service.send( subject = Utils.subject( "Heroku Usage" ), String.format( IMAGE, url = cloudinary.upload( base64( image ), subject ) ) );
 
-		service.send( "Heroku Usage_" + time, String.format( IMAGE, cloudinary.upload( base64( image ), time ) ) );
+		slack.call( new SlackMessage( subject ).addAttachments( new SlackAttachment( subject ).setImageUrl( url ) ) );
 	}
 }
