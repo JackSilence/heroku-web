@@ -58,11 +58,11 @@ public class Usage extends Selenium {
 			billing.getPassword().sendKeys( Utils.decode( password ) );
 			billing.getLogin().click();
 
-			sleep();
+			sleep( 10000 );
 
 			script( driver, script );
 
-			sleep();
+			sleep( 1000 );
 
 			images.add( screenshot( driver, billing.getUsage() ) );
 
