@@ -3,9 +3,9 @@ package heroku.service;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
+import org.jboss.aerogear.security.otp.Totp;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.PageFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +34,9 @@ public class Usage extends Selenium {
 	@Value( "${heroku.account}" )
 	private String[] account;
 
+	@Value( "${heroku.code}" )
+	private String[] code;
+
 	@Value( "${heroku.password}" )
 	private String password;
 
@@ -49,13 +52,18 @@ public class Usage extends Selenium {
 
 		List<BufferedImage> images = new ArrayList<>();
 
-		Arrays.stream( account ).forEach( i -> {
+		for ( int i = 0; i < account.length; i++ ) {
 			driver.get( "https://dashboard.heroku.com/account/billing" );
 
 			Billing billing = PageFactory.initElements( driver, Billing.class );
 
-			billing.getEmail().sendKeys( Utils.decode( i ) );
+			billing.getEmail().sendKeys( Utils.decode( account[ i ] ) );
 			billing.getPassword().sendKeys( Utils.decode( password ) );
+			billing.getLogin().click();
+
+			sleep( 1000 );
+
+			billing.getCode().sendKeys( new Totp( code[ i ] ).now() );
 			billing.getLogin().click();
 
 			sleep( 10000 );
@@ -70,7 +78,7 @@ public class Usage extends Selenium {
 			billing.getLogout().click();
 
 			sleep();
-		} );
+		}
 
 		if ( images.isEmpty() ) {
 			return;

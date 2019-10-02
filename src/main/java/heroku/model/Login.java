@@ -10,6 +10,9 @@ public class Login {
 	@FindBy( xpath = "//*[@id=\"password\"]" )
 	private WebElement password;
 
+	@FindBy( xpath = "//*[@id=\"code\"]" )
+	private WebElement code;
+
 	@FindBy( xpath = "//*[@id=\"login\"]/form/button" )
 	private WebElement login;
 
@@ -19,6 +22,10 @@ public class Login {
 
 	public WebElement getPassword() {
 		return password;
+	}
+
+	public WebElement getCode() {
+		return code;
 	}
 
 	public WebElement getLogin() {

@@ -20,4 +20,5 @@ dependencies {
 	compile('com.github.JackSilence:magic:e9a2adaf2e')
 	
 	compile('com.sendgrid:sendgrid-java:4.0.1')
+	compile('org.jboss.aerogear:aerogear-otp-java:1.0.0')
 }
