@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.aerogear.security.otp.Totp;
+import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.PageFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,10 +65,18 @@ public class Usage extends Selenium {
 			billing.getPassword().sendKeys( Utils.decode( password ) );
 			billing.getLogin().click();
 
-			sleep( 5000 );
+			sleep( 1000 );
 
-			billing.getCode().sendKeys( new Totp( code[ i ] ).now() );
-			billing.getVerify().click();
+			String otp = new Totp( code[ i ] ).now();
+
+			try {
+				billing.getCode().sendKeys( otp );
+				billing.getLogin().click();
+
+			} catch ( NoSuchElementException e ) {
+				billing.getInput9().sendKeys( otp );
+				billing.getVerify().click();
+			}
 
 			sleep( 10000 );
 

@@ -10,11 +10,14 @@ public class Login {
 	@FindBy( xpath = "//*[@id=\"password\"]" )
 	private WebElement password;
 
-	@FindBy( xpath = "//*[@id=\"input-9\"]" )
+	@FindBy( xpath = "//*[@id=\"code\"]" )
 	private WebElement code;
 
 	@FindBy( xpath = "//*[@id=\"login\"]/form/button" )
 	private WebElement login;
+
+	@FindBy( xpath = "//*[@id=\"input-9\"]" )
+	private WebElement input9;
 
 	@FindBy( xpath = "//*[@id=\"root\"]/vaasdist-verify/div/vaas-verify/div/vaas-verify-totp/vaas-container/div/div/slot/div/form/div/vaas-button-brand/button" )
 	private WebElement verify;
@@ -33,6 +36,10 @@ public class Login {
 
 	public WebElement getLogin() {
 		return login;
+	}
+
+	public WebElement getInput9() {
+		return input9;
 	}
 
 	public WebElement getVerify() {
