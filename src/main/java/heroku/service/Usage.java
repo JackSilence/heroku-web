@@ -64,7 +64,7 @@ public class Usage extends Selenium {
 			billing.getPassword().sendKeys( Utils.decode( password ) );
 			billing.getLogin().click();
 
-			sleep( 1000 );
+			sleep( 5000 );
 
 			billing.getCode().sendKeys( new Totp( code[ i ] ).now() );
 			billing.getVerify().click();
