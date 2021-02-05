@@ -4,7 +4,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 
 public class User extends Login {
-	@FindBy( xpath = "/html/body/nav/div[3]/a[2]" )
+	@FindBy( css = "body > div.glostick > nav > div.glostick__user > a.glostick__menu-icon.glostick__menu-icon--account" )
 	private WebElement menu;
 
 	@FindBy( xpath = "//*[@id=\"glostick__menu--account\"]/li[4]/a" )

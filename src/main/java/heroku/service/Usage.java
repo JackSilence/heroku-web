@@ -4,6 +4,7 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.jboss.aerogear.security.otp.Totp;
 import org.openqa.selenium.WebDriver;
@@ -48,6 +49,8 @@ public class Usage extends Selenium {
 
 	@Override
 	protected void run( WebDriver driver ) {
+		driver.manage().timeouts().implicitlyWait( 10, TimeUnit.SECONDS );
+
 		String script = String.format( Utils.getResourceAsString( SCRIPT ), Billing.CSS_USAGE ), subject, url;
 
 		List<BufferedImage> images = new ArrayList<>();
@@ -64,7 +67,7 @@ public class Usage extends Selenium {
 			sleep( 1000 );
 
 			billing.getCode().sendKeys( new Totp( code[ i ] ).now() );
-			billing.getLogin().click();
+			billing.getVerify().click();
 
 			sleep( 10000 );
 
